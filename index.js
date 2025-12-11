@@ -1,5 +1,4 @@
-
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 
 async function connectToWhatsApp() {
@@ -9,30 +8,34 @@ async function connectToWhatsApp() {
     auth: state,
     printQRInTerminal: false,
     logger: pino({ level: 'silent' }),
-    browser: ['PKBM Bot', 'Chrome', '110.0']
+    browser: Browsers.ubuntu('Chrome')
   });
 
   sock.ev.on('creds.update', saveCreds);
 
-  if (!state.creds.registered) {
-    setTimeout(async () => {
+  sock.ev.on('connection.update', async (update) => {
+    const { connection, lastDisconnect } = update;
+    
+    console.log('Connection status:', connection);
+    
+    if (connection === 'connecting' && !sock.authState.creds.registered) {
+      console.log('Requesting pairing code...');
+      
       try {
         const code = await sock.requestPairingCode('6285183189421');
-        console.log('╔══════════════════════════════════╗');
+        
+        console.log('\n╔══════════════════════════════════╗');
         console.log('║    KODE PAIRING WHATSAPP:       ║');
         console.log('║                                  ║');
         console.log(`║         ${code}              ║`);
         console.log('║                                  ║');
-        console.log('╚══════════════════════════════════╝');
+        console.log('╚══════════════════════════════════╝\n');
         console.log('Input kode (tanpa strip):', code.replace(/-/g, ''));
+        
       } catch (e) {
-        console.log('Error:', e.message);
+        console.log('Error requesting code:', e.message);
       }
-    }, 5000);
-  }
-
-  sock.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect } = update;
+    }
     
     if (connection === 'open') {
       console.log('✅ Bot Connected!');
@@ -40,7 +43,9 @@ async function connectToWhatsApp() {
     
     if (connection === 'close') {
       const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+      
       if (shouldReconnect) {
+        console.log('Reconnecting in 5s...');
         setTimeout(connectToWhatsApp, 5000);
       }
     }
@@ -52,18 +57,16 @@ async function connectToWhatsApp() {
 
     const reply = `Halo! Bot PKBM Kreatif Mandiri aktif ✅
 
-Contoh perintah:
-• Nilai Budi Matematika
-• Absensi Ani Desember
-
 Bot siap 24 jam! 🚀`;
 
     try {
       await sock.sendMessage(m.key.remoteJid, { text: reply });
+      console.log('✅ Message sent!');
     } catch (err) {
       console.log('Error:', err.message);
     }
   });
 }
 
+console.log('Starting bot...');
 connectToWhatsApp();
