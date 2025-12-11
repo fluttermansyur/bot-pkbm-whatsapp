@@ -1,0 +1,247 @@
+git config --global user.name "Mansyur"
+git config --global user.email "fluttermansyur@gmail.com"
+
+
+
+
+Oke sip! Tutorial deploy bot WhatsApp ke **Railway.app** (GRATIS):
+
+---
+
+## **LANGKAH 1: Persiapan File di HP/Laptop**
+
+Buat folder project dulu. Kalau di **Termux**:
+
+```bash
+cd ~
+rm -rf botpkbm
+mkdir botpkbm && cd botpkbm
+```
+
+---
+
+## **LANGKAH 2: Buat File-file Project**
+
+### **A. package.json**
+```bash
+cat > package.json << 'EOF'
+{
+  "name": "bot-pkbm",
+  "version": "1.0.0",
+  "description": "Bot WhatsApp PKBM Kreatif Mandiri",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.7",
+    "pino": "^8.16.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+EOF
+```
+
+### **B. index.js** (file utama bot)
+```bash
+cat > index.js << 'EOF'
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const pino = require('pino');
+
+async function connectToWhatsApp() {
+  const { state, saveCreds } = await useMultiFileAuthState('auth_info');
+  
+  const sock = makeWASocket({
+    auth: state,
+    printQRInTerminal: false,
+    logger: pino({ level: 'silent' }),
+    browser: ['PKBM Kreatif Mandiri', 'Chrome', '110.0']
+  });
+
+  sock.ev.on('creds.update', saveCreds);
+
+  // Request pairing code untuk nomor tertentu
+  if (!state.creds.registered) {
+    setTimeout(async () => {
+      try {
+        const code = await sock.requestPairingCode('6285183189421');
+        console.log('╔══════════════════════════════════╗');
+        console.log('║    KODE PAIRING WHATSAPP:       ║');
+        console.log('║                                  ║');
+        console.log(`║         ${code}              ║`);
+        console.log('║                                  ║');
+        console.log('╚══════════════════════════════════╝');
+        console.log('\nInput kode (tanpa strip):', code.replace(/-/g, ''));
+      } catch (e) {
+        console.log('Error get pairing code:', e.message);
+      }
+    }, 3000);
+  }
+
+  sock.ev.on('connection.update', (update) => {
+    const { connection, lastDisconnect } = update;
+    
+    if (connection === 'open') {
+      console.log('✅ Bot PKBM Connected to WhatsApp!');
+    }
+    
+    if (connection === 'close') {
+      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+      
+      console.log('Connection closed. Reconnecting:', shouldReconnect);
+      
+      if (shouldReconnect) {
+        setTimeout(connectToWhatsApp, 5000);
+      }
+    }
+  });
+
+  sock.ev.on('messages.upsert', async ({ messages }) => {
+    const m = messages[0];
+    if (!m.message || m.key.fromMe) return;
+
+    const from = m.key.remoteJid;
+    const text = m.message.conversation || m.message.extendedTextMessage?.text || '';
+
+    console.log('Pesan dari:', from, '- Isi:', text);
+
+    const reply = `Halo! Bot PKBM Kreatif Mandiri aktif ✅
+
+Contoh perintah:
+• Nilai Budi Matematika
+• Absensi Ani Desember
+• Rekap kelas 12 paket C pdf
+• Tambah siswa: Nama Budi, NIS 12345, Kelas 12
+
+Bot siap 24 jam! 🚀`;
+
+    try {
+      await sock.sendMessage(from, { text: reply });
+      console.log('✅ Reply sent!');
+    } catch (err) {
+      console.log('Error sending message:', err.message);
+    }
+  });
+}
+
+connectToWhatsApp();
+EOF
+```
+
+### **C. .gitignore**
+```bash
+cat > .gitignore << 'EOF'
+node_modules/
+auth_info/
+*.log
+.env
+EOF
+```
+
+### **D. README.md**
+```bash
+cat > README.md << 'EOF'
+# Bot WhatsApp PKBM Kreatif Mandiri
+
+Bot WhatsApp untuk manajemen siswa PKBM.
+
+## Deploy to Railway
+1. Push code ke GitHub
+2. Connect Railway dengan GitHub repo
+3. Deploy otomatis
+4. Lihat logs untuk kode pairing
+EOF
+```
+
+---
+
+## **LANGKAH 3: Upload ke GitHub**
+
+### **A. Install Git di Termux** (kalau belum ada)
+```bash
+pkg install git -y
+```
+
+### **B. Setup Git**
+```bash
+git config --global user.name "NamaKamu"
+git config --global user.email "email@kamu.com"
+```
+
+### **C. Buat Repo di GitHub**
+1. Buka browser → https://github.com
+2. Login
+3. Klik **New Repository**
+4. Nama: `bot-pkbm-whatsapp`
+5. Public/Private (terserah)
+6. **JANGAN** centang "Initialize with README"
+7. Klik **Create Repository**
+
+### **D. Push Code dari Termux**
+```bash
+cd ~/botpkbm
+git init
+git add .
+git commit -m "Initial commit bot PKBM"
+git branch -M main
+git remote add origin https://github.com/USERNAME_KAMU/bot-pkbm-whatsapp.git
+git push -u origin main
+```
+
+*Ganti `USERNAME_KAMU` dengan username GitHub kamu*
+
+---
+
+## **LANGKAH 4: Deploy ke Railway**
+
+### **A. Daftar Railway**
+1. Buka: https://railway.app
+2. Klik **Login with GitHub**
+3. Authorize Railway
+
+### **B. Deploy Project**
+1. Klik **New Project**
+2. Pilih **Deploy from GitHub repo**
+3. Pilih repo `bot-pkbm-whatsapp`
+4. Railway otomatis deploy!
+
+### **C. Lihat Logs untuk Kode Pairing**
+1. Klik project kamu
+2. Klik tab **Deployments**
+3. Klik deployment yang aktif
+4. Klik **View Logs**
+5. **KODE PAIRING akan muncul di logs!** 🎉
+
+### **D. Input Kode ke WhatsApp**
+1. Buka WhatsApp di HP
+2. Settings → Linked Devices
+3. Link with phone number
+4. Input kode dari logs Railway
+
+---
+
+## **LANGKAH 5: Bot Jalan 24/7!**
+
+✅ Bot sudah jalan di cloud Railway
+✅ Tidak perlu HP nyala terus
+✅ Gratis 500 jam/bulan (cukup untuk 24/7)
+
+---
+
+## **TROUBLESHOOTING**
+
+**Kalau kode pairing tidak muncul di logs:**
+```bash
+# Update index.js, tambahkan console.log lebih banyak
+# Push lagi ke GitHub
+git add .
+git commit -m "Fix logs"
+git push
+
+Railway otomatis re-deploy!
+
+---
+
+**Mau mulai sekarang?** Ikuti langkah-langkah di atas ya! Kalau ada yang bingung, tanya aja! 🚀
