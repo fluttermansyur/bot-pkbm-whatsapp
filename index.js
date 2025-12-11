@@ -1,3 +1,4 @@
+
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 
@@ -23,10 +24,9 @@ async function connectToWhatsApp() {
         console.log(`║         ${code}              ║`);
         console.log('║                                  ║');
         console.log('╚══════════════════════════════════╝');
-        console.log('\nInput kode (tanpa strip):', code.replace(/-/g, ''));
+        console.log('Input kode (tanpa strip):', code.replace(/-/g, ''));
       } catch (e) {
-        console.log('Error get pairing code:', e.message);
-        console.log('Stack:', e.stack);
+        console.log('Error:', e.message);
       }
     }, 5000);
   }
@@ -35,14 +35,11 @@ async function connectToWhatsApp() {
     const { connection, lastDisconnect } = update;
     
     if (connection === 'open') {
-      console.log('✅ Bot PKBM Connected to WhatsApp!');
+      console.log('✅ Bot Connected!');
     }
     
     if (connection === 'close') {
       const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-      
-      console.log('Connection closed. Reconnecting:', shouldReconnect);
-      
       if (shouldReconnect) {
         setTimeout(connectToWhatsApp, 5000);
       }
@@ -58,15 +55,13 @@ async function connectToWhatsApp() {
 Contoh perintah:
 • Nilai Budi Matematika
 • Absensi Ani Desember
-• Rekap kelas 12 paket C pdf
 
 Bot siap 24 jam! 🚀`;
 
     try {
       await sock.sendMessage(m.key.remoteJid, { text: reply });
-      console.log('✅ Reply sent!');
     } catch (err) {
-      console.log('Error sending message:', err.message);
+      console.log('Error:', err.message);
     }
   });
 }
